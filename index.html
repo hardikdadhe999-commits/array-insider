@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<title>ArrayLab - Interactive Array Simulation &amp; Backend API</title>
+<style>
+:root {
+  --bg: #0a0a1f;
+  --panel: #12122e;
+  --panel-light: #18183d;
+  --ink: #e8e8ff;
+  --cyan: #00f0ff;
+  --pink: #ff2bd6;
+  --lime: #39ff14;
+  --yellow: #ffe600;
+  --red: #ff4d6d;
+  --dim: #8a8ab8;
+  --border-cyan: rgba(0, 240, 255, 0.4);
+  --border-pink: rgba(255, 43, 214, 0.4);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  line-height: 1.6;
+  background: var(--bg);
+  background-image: 
+    radial-gradient(circle at 15% 0%, rgba(255, 43, 214, 0.18), transparent 40%),
+    radial-gradient(circle at 90% 30%, rgba(0, 240, 255, 0.15), transparent 40%),
+    linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  background-attachment: fixed;
+}
+code, pre, .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+
+header {
+  background: rgba(10, 10, 31, 0.95);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 2px solid var(--cyan);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+}
+.bar {
+  max-width: 1100px;
+  margin: auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.brand b {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.45rem;
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+}
+.brand small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+.nav-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+nav a {
+  color: var(--ink);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.88rem;
+  display: inline-block;
+  border: 1px solid transparent;
+  transition: 0.2s;
+}
+nav a:hover, nav a:focus {
+  color: var(--pink);
+  border-color: var(--pink);
+  box-shadow: 0 0 10px var(--pink);
+}
+#menuBtn { display: none; }
+
+/* Status pill badge in header */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--dim);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: 0.25s;
+}
+.status-pill .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dim);
+  display: inline-block;
+}
+.status-pill.online {
+  border-color: var(--lime);
+  color: var(--lime);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.35);
+}
+.status-pill.online .dot {
+  background: var(--lime);
+  box-shadow: 0 0 8px var(--lime);
+  animation: pulse 2s infinite;
+}
+.status-pill.offline {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  box-shadow: 0 0 12px rgba(255, 230, 0, 0.3);
+}
+.status-pill.offline .dot {
+  background: var(--yellow);
+  box-shadow: 0 0 8px var(--yellow);
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+main { max-width: 1100px; margin: auto; padding: 16px; }
+section {
+  background: var(--panel);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(255, 43, 214, 0.05);
+  padding: 22px;
+  margin: 22px 0;
+  border-radius: 14px;
+}
+h2 {
+  margin: 0 0 14px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  color: var(--pink);
+  text-shadow: 0 0 8px var(--pink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+h3 { margin: 16px 0 8px; font-size: 1.05rem; color: var(--cyan); }
+.titlebox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.titlebox h1 {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.3rem;
+  background: linear-gradient(90deg, var(--cyan), var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.6));
+}
+.tag { font-size: 0.9rem; color: var(--yellow); margin-top: 4px; }
+.info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px 16px;
+  font-size: 0.92rem;
+  border: 1px dashed var(--lime);
+  padding: 12px 16px;
+  border-radius: 10px;
+  min-width: 280px;
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.25);
+  background: rgba(10, 10, 31, 0.6);
+}
+.info span { color: var(--lime); font-weight: 600; }
+
+button, input { font: inherit; }
+button {
+  background: transparent;
+  color: var(--cyan);
+  border: 1.5px solid var(--cyan);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 40px;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  transition: 0.2s;
+  font-weight: 600;
+}
+button:hover {
+  background: var(--cyan);
+  color: #05051a;
+  box-shadow: 0 0 18px var(--cyan);
+  transform: translateY(-1px);
+}
+button.alt {
+  color: var(--pink);
+  border-color: var(--pink);
+  box-shadow: 0 0 8px rgba(255, 43, 214, 0.5);
+}
+button.alt:hover {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 0 18px var(--pink);
+}
+button.red {
+  color: var(--yellow);
+  border-color: var(--yellow);
+  box-shadow: 0 0 8px rgba(255, 230, 0, 0.5);
+}
+button.red:hover {
+  background: var(--yellow);
+  color: #05051a;
+  box-shadow: 0 0 18px var(--yellow);
+}
+button.api-btn {
+  color: var(--lime);
+  border-color: var(--lime);
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+}
+button.api-btn:hover {
+  background: var(--lime);
+  color: #05051a;
+  box-shadow: 0 0 18px var(--lime);
+}
+
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+input[type=text], input[type=number] {
+  border: 1px solid var(--dim);
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 100%;
+  background: #07071a;
+  color: var(--ink);
+  min-height: 40px;
+}
+input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  outline: none;
+}
+label { font-size: 0.82rem; display: block; font-weight: 600; margin-bottom: 2px; color: var(--dim); }
+
+.stat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  font-size: 0.92rem;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.stat b { color: var(--yellow); font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; }
+#statusMsg { font-weight: 600; color: var(--lime); text-shadow: 0 0 6px rgba(57, 255, 20, 0.6); }
+#statusMsg.err { color: var(--red); text-shadow: 0 0 6px rgba(255, 77, 109, 0.6); }
+
+#cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 12px;
+  min-height: 110px;
+  border: 1px solid rgba(255, 43, 214, 0.5);
+  border-radius: 10px;
+  background: #07071a;
+  overflow-x: auto;
+  align-items: center;
+}
+.cell {
+  width: 66px;
+  border: 2px solid var(--cyan);
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+  background: #0d0d2b;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: pop 0.3s ease;
+}
+.cell .idx {
+  display: block;
+  background: rgba(0, 240, 255, 0.18);
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 2px 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.cell .val {
+  display: block;
+  font-size: 1.35rem;
+  padding: 8px 0;
+  font-family: "JetBrains Mono", monospace;
+  color: #fff;
+  font-weight: 600;
+}
+.cell.active {
+  background: var(--cyan);
+  box-shadow: 0 0 24px var(--cyan);
+  transform: scale(1.12);
+}
+.cell.active .val { color: #05051a; font-weight: 700; }
+.cell.active .idx { color: #05051a; background: rgba(0, 0, 0, 0.25); }
+
+.cell.ok {
+  border-color: var(--lime);
+  box-shadow: 0 0 20px var(--lime);
+  transform: scale(1.08);
+}
+.cell.ok .idx { color: var(--lime); background: rgba(57, 255, 20, 0.2); border-color: var(--lime); }
+.cell.ok .val { color: var(--lime); font-weight: 700; }
+.cell.hint {
+  border-color: var(--yellow);
+  box-shadow: 0 0 18px var(--yellow);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.ctrls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+fieldset {
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(10, 10, 31, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+legend {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--pink);
+  letter-spacing: 1px;
+  padding: 0 6px;
+  font-family: 'Orbitron', sans-serif;
+}
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.row.single { grid-template-columns: 1fr; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+.two {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 14px;
+  margin: 16px 0;
+}
+.box {
+  background: #08081c;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  padding: 14px;
+  min-height: 120px;
+}
+.box h3 { margin-top: 0; }
+#explain ol { margin: 6px 0 0 20px; padding: 0; font-size: 0.92rem; }
+#explain li { margin: 4px 0; }
+#history li {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.88rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: #cfcfea;
+}
+#history li:last-child { border-bottom: none; }
+
+.mem {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+  overflow-x: auto;
+  padding: 12px 4px;
+}
+.m {
+  border: 1.5px solid var(--lime);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #05051a;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.25);
+  min-width: 64px;
+  transition: 0.2s;
+}
+.m.active {
+  background: rgba(57, 255, 20, 0.2);
+  box-shadow: 0 0 18px var(--lime);
+  transform: scale(1.06);
+}
+.m small { display: block; font-size: 0.72rem; color: var(--dim); font-family: 'JetBrains Mono', monospace; }
+.m b { display: block; font-size: 1.25rem; color: var(--lime); font-family: 'JetBrains Mono', monospace; margin: 2px 0; }
+
+.formula {
+  background: #060618;
+  border-left: 4px solid var(--yellow);
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin: 10px 0;
+  color: var(--yellow);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.card {
+  background: rgba(18, 18, 46, 0.7);
+  border: 1px solid var(--border-cyan);
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+  transition: 0.2s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--pink);
+  box-shadow: 0 0 14px rgba(255, 43, 214, 0.35);
+}
+.card .ic { font-size: 2rem; margin-bottom: 6px; }
+.card h3 { margin: 4px 0; font-size: 1rem; color: var(--cyan); }
+.card p { margin: 0; font-size: 0.85rem; color: var(--dim); }
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+.cols ul { margin: 6px 0 0 18px; padding: 0; font-size: 0.9rem; }
+.cols li { margin-bottom: 4px; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.92rem;
+  background: #07071a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(0, 240, 255, 0.2); }
+th { background: rgba(0, 240, 255, 0.15); color: var(--cyan); font-family: 'Orbitron', sans-serif; font-size: 0.85rem; }
+td:first-child { color: var(--pink); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+td:not(:first-child) { font-family: 'JetBrains Mono', monospace; color: var(--lime); }
+
+pre {
+  background: #05051a;
+  border: 1px solid rgba(57, 255, 20, 0.4);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 0.84rem;
+  margin: 6px 0;
+  color: var(--lime);
+}
+.algos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+#codeBox { display: none; max-height: 420px; overflow: auto; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.chips button { font-size: 0.82rem; min-height: 34px; border-radius: 20px; padding: 6px 14px; }
+#aiOut {
+  border-left: 4px solid var(--pink);
+  background: #07071a;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  min-height: 48px;
+  box-shadow: 0 0 12px rgba(255, 43, 214, 0.25);
+  font-size: 0.95rem;
+}
+
+details {
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  background: #0c0c27;
+  margin: 8px 0;
+  padding: 8px 14px;
+  transition: 0.2s;
+}
+details[open] {
+  border-color: var(--lime);
+  box-shadow: 0 0 14px rgba(57, 255, 20, 0.3);
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--cyan);
+  font-size: 0.95rem;
+}
+
+/* API Endpoints table styling */
+.api-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: bold;
+  font-family: 'JetBrains Mono', monospace;
+}
+.badge-get { background: rgba(57, 255, 20, 0.2); color: var(--lime); border: 1px solid var(--lime); }
+.badge-post { background: rgba(0, 240, 255, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
+
+footer {
+  text-align: center;
+  padding: 28px 16px;
+  font-size: 0.88rem;
+  color: var(--dim);
+  border-top: 1px solid rgba(255, 43, 214, 0.5);
+  margin-top: 30px;
+}
+footer b { color: var(--pink); text-shadow: 0 0 8px var(--pink); }
+
+@media(max-width: 800px) {
+  #menuBtn { display: block; }
+  nav { display: none; width: 100%; margin-top: 10px; }
+  nav.open { display: flex; flex-direction: column; }
+  nav a { display: block; padding: 10px; }
+  .two { grid-template-columns: 1fr; }
+  .cell { width: 56px; }
+  .titlebox h1 { font-size: 1.8rem; }
+}
+@media(prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+ <div class="bar">
+  <div class="brand">
+    <b>ArrayLab</b>
+    <small>Interactive Array Simulation &amp; REST Backend API</small>
+  </div>
+  
+  <div class="nav-wrap">
+    <!-- Real-time Backend Connection Status Badge -->
+    <div id="backendBadge" class="status-pill" onclick="checkBackendHealth(true)" title="Click to test backend connection">
+      <span class="dot"></span>
+      <span id="badgeText">Connecting...</span>
+    </div>
+
+    <button id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" aria-label="Main">
+     <a href="#simulator">Simulator</a>
+     <a href="#theory">Theory</a>
+     <a href="#algorithms">Algorithms</a>
+     <a href="#complexity">Complexity</a>
+     <a href="#backend">Backend API</a>
+     <a href="#ai">AI Tutor</a>
+     <a href="#viva">Viva</a>
+    </nav>
+  </div>
+ </div>
+</header>
+
+<main>
+<section style="margin-top:16px">
+ <div class="titlebox">
+  <div>
+   <h1>ArrayLab</h1>
+   <div class="tag">Data Structures &middot; Practical Assignment &middot; Experiment No. 01 &amp; Backend Service</div>
+  </div>
+  <div class="info">
+   <div><span>Student:</span> Harshit Chaturvedi</div>
+   <div><span>Course:</span> B.Tech CSE</div>
+   <div><span>Subject:</span> Data Structures</div>
+   <div><span>Semester:</span> 1st Year</div>
+   <div><span>Experiment:</span> Array Operations &amp; REST Server</div>
+  </div>
+ </div>
+</section>
+
+<!-- SIMULATOR SECTION -->
+<section id="simulator">
+ <h2>
+   <span>Array Simulator</span>
+   <small id="serverSourceBadge" style="font-size:0.75rem;font-family:'JetBrains Mono';color:var(--dim);font-weight:normal"></small>
+ </h2>
+ 
+ <div class="stat" aria-live="polite">
+  <div>Array Size: <b id="arrSize">5</b> / 12</div>
+  <div>Current Operation: <b id="curOp">Ready</b></div>
+  <div>Status: <span id="statusMsg">Loading simulation...</span></div>
+ </div>
+ 
+ <div id="cells" aria-label="Array elements"></div>
+
+ <div class="ctrls">
+  <fieldset><legend>INSERT</legend>
+   <div class="row">
+     <div><label for="insVal">Value</label><input id="insVal" type="number" placeholder="e.g. 25"></div>
+     <div><label for="insPos">Position</label><input id="insPos" type="number" placeholder="0 to size"></div>
+   </div>
+   <button onclick="insertElement()">Insert Element</button>
+  </fieldset>
+
+  <fieldset><legend>DELETE</legend>
+   <div class="row single">
+     <div><label for="delPos">Position (Index)</label><input id="delPos" type="number" placeholder="0 to size-1"></div>
+   </div>
+   <button onclick="deleteElement()">Delete Element</button>
+  </fieldset>
+
+  <fieldset><legend>UPDATE</legend>
+   <div class="row">
+     <div><label for="updPos">Position</label><input id="updPos" type="number" placeholder="index"></div>
+     <div><label for="updVal">New Value</label><input id="updVal" type="number" placeholder="new val"></div>
+   </div>
+   <button onclick="updateElement()">Update Element</button>
+  </fieldset>
+
+  <fieldset><legend>SEARCH</legend>
+   <div class="row single">
+     <div><label for="srcVal">Search Target</label><input id="srcVal" type="number" placeholder="value to find"></div>
+   </div>
+   <button onclick="searchElement()">Search Element</button>
+  </fieldset>
+
+  <fieldset><legend>OTHER OPERATIONS</legend>
+   <div class="btns">
+    <button class="alt" onclick="traverseArray()">Traverse</button>
+    <button class="alt" onclick="sortArray()">Sort Asc</button>
+    <button class="alt" onclick="reverseArray()">Reverse</button>
+    <button class="red" onclick="resetArray()">Reset</button>
+   </div>
+  </fieldset>
+ </div>
+
+ <div class="two">
+  <div class="box" aria-live="polite">
+    <h3>Operation Explanation &amp; Algorithmic Steps</h3>
+    <div id="explain">Perform an operation to see backend execution steps in real time.</div>
+  </div>
+  <div class="box">
+    <h3>Recent Operations Log</h3>
+    <ul id="history" style="list-style:none;padding:0"><li>No operations yet.</li></ul>
+  </div>
+ </div>
+
+ <h3>Try It Yourself (Instant Demos)</h3>
+ <p style="margin:2px 0 6px;font-size:0.88rem;color:var(--dim)">These buttons trigger operations through the active backend service with pre-configured parameters:</p>
+ <div class="btns">
+  <button class="alt" onclick="insertElement(25, 2)">Insert 25 at index 2</button>
+  <button class="alt" onclick="deleteElement(1)">Delete index 1</button>
+  <button class="alt" onclick="searchElement(30)">Search 30</button>
+  <button class="alt" onclick="updateElement(3, 75)">Update index 3 to 75</button>
+  <button class="alt" onclick="reverseArray()">Reverse Array</button>
+  <button class="alt" onclick="sortArray()">Sort Array</button>
+ </div>
+
+ <h3>Contiguous Memory Address Calculation</h3>
+ <p style="margin:2px 0;font-size:0.9rem">Base address = 1000, element size = 4 bytes (Calculated dynamically by the backend for each index).</p>
+ <div id="mem" class="mem"></div>
+ <div class="formula mono">
+   Address of element = Base Address + (Index &times; Element Size)<br>
+   Example: Address of A[2] = 1000 + (2 &times; 4) = 1008
+ </div>
+ <p style="font-size:0.88rem;margin:0;color:var(--dim)">Contiguous layout ensures the CPU can compute any cell memory address in one multiplication and addition (O(1) random access time).</p>
+</section>
+
+<!-- BACKEND REST API DOCUMENTATION & LIVE TEST -->
+<section id="backend">
+  <h2>Backend REST API Endpoints</h2>
+  <p>The ArrayLab Node.js + Express backend exposes full RESTful endpoints for manipulating the data structure, computing memory layouts, and running AI assistance:</p>
+  
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th>Endpoint</th>
+        <th>Payload / Description</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="api-badge badge-get">GET</span></td>
+        <td><code>/api/health</code></td>
+        <td>Check server health and uptime status</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="callApiTest('/health', 'GET')">Test</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-get">GET</span></td>
+        <td><code>/api/array</code></td>
+        <td>Fetch live array state and memory mappings</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="callApiTest('/array', 'GET')">Test</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-post">POST</span></td>
+        <td><code>/api/array/insert</code></td>
+        <td><code>{ "value": 99, "position": 1 }</code> - Insert with element shifting</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="insertElement(99, 1)">Execute</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-post">POST</span></td>
+        <td><code>/api/array/delete</code></td>
+        <td><code>{ "position": 0 }</code> - Delete and shift elements left</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="deleteElement(0)">Execute</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-post">POST</span></td>
+        <td><code>/api/array/search</code></td>
+        <td><code>{ "value": 40 }</code> - Linear search with comparison count</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="searchElement(40)">Execute</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-post">POST</span></td>
+        <td><code>/api/array/reset</code></td>
+        <td>Reset simulation state to original <code>[10, 20, 30, 40, 50]</code></td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="resetArray()">Execute</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-post">POST</span></td>
+        <td><code>/api/tutor/ask</code></td>
+        <td><code>{ "question": "..." }</code> - Ask AI tutor question</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="askAssistant('Why is array access O(1)?')">Test Query</button></td>
+      </tr>
+      <tr>
+        <td><span class="api-badge badge-get">GET</span></td>
+        <td><code>/api/viva</code></td>
+        <td>Returns full array question bank for professors</td>
+        <td><button class="api-btn" style="padding:4px 8px;min-height:30px;font-size:0.78rem" onclick="callApiTest('/viva', 'GET')">Test</button></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  
+  <div id="apiTestResult" style="display:none;margin-top:12px">
+    <h3>Raw Backend JSON Response:</h3>
+    <pre id="apiTestJson" style="max-height:220px;overflow:auto"></pre>
+  </div>
+</section>
+
+<!-- THEORY SECTION -->
+<section id="theory">
+ <h2>What is an Array?</h2>
+ <p><i>An array is a linear data structure used to store elements of the same data type in contiguous memory locations.</i></p>
+ <div class="cards">
+  <div class="card"><div class="ic">&#128207;</div><h3>Fixed Size</h3><p>Allocated at creation; bounds are strictly enforced.</p></div>
+  <div class="card"><div class="ic">&#128288;</div><h3>Same Data Type</h3><p>All items occupy the same byte footprint (e.g. 4 bytes for int).</p></div>
+  <div class="card"><div class="ic">&#129521;</div><h3>Contiguous Memory</h3><p>Elements reside side-by-side without memory gaps.</p></div>
+  <div class="card"><div class="ic">&#128290;</div><h3>0-Based Index</h3><p>Index equals distance/offset from base memory address.</p></div>
+  <div class="card"><div class="ic">&#9889;</div><h3>Direct Random Access</h3><p>Instant O(1) formula jumps straight to any element.</p></div>
+ </div>
+ <div class="cols">
+  <div><h3>Characteristics</h3><ul><li>Fixed-size structure</li><li>Homogeneous data type</li><li>Contiguous memory allocation</li><li>Constant-time index access</li><li>Hardware cache friendly</li></ul></div>
+  <div><h3>Advantages</h3><ul><li>Instant O(1) random lookup</li><li>Predictable memory overhead</li><li>Simple index-based iterations</li><li>Foundation for Stacks, Queues, Heaps</li></ul></div>
+  <div><h3>Disadvantages</h3><ul><li>Fixed capacity in traditional arrays</li><li>Insertion requires right shifting O(n)</li><li>Deletion requires left shifting O(n)</li><li>Searching unsorted arrays takes O(n)</li></ul></div>
+  <div><h3>Applications</h3><ul><li>CPU cache &amp; memory buffers</li><li>Student mark records &amp; tables</li><li>Lookup tables &amp; Matrices</li><li>Implementation of Hash Tables</li></ul></div>
+ </div>
+</section>
+
+<!-- COMPLEXITY SECTION -->
+<section id="complexity">
+ <h2>Time &amp; Space Complexity</h2>
+ <div style="overflow-x:auto">
+ <table>
+  <thead>
+    <tr><th>Operation</th><th>Best Case</th><th>Average Case</th><th>Worst Case</th><th>Space Complexity</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Access (Index Lookup)</td><td>O(1)</td><td>O(1)</td><td>O(1)</td><td>O(1)</td></tr>
+    <tr><td>Search (Linear Search)</td><td>O(1)</td><td>O(n)</td><td>O(n)</td><td>O(1)</td></tr>
+    <tr><td>Insertion</td><td>O(1) [at end]</td><td>O(n)</td><td>O(n) [at start]</td><td>O(1)</td></tr>
+    <tr><td>Deletion</td><td>O(1) [at end]</td><td>O(n)</td><td>O(n) [at start]</td><td>O(1)</td></tr>
+    <tr><td>Traversal</td><td>O(n)</td><td>O(n)</td><td>O(n)</td><td>O(1)</td></tr>
+  </tbody>
+ </table>
+ </div>
+</section>
+
+<!-- ALGORITHMS SECTION -->
+<section id="algorithms">
+ <h2>Core Algorithms &amp; Pseudocode</h2>
+ <div class="algos">
+  <div>
+   <h3>1. Insertion Algorithm</h3>
+   <pre>START
+IF size >= MAX_CAPACITY THEN
+   PRINT "Array Overflow"
+   STOP
+END IF
+FOR i = size-1 DOWN TO pos DO
+   A[i + 1] = A[i]  // Shift right
+END FOR
+A[pos] = newValue
+size = size + 1
+STOP</pre>
+  </div>
+  <div>
+   <h3>2. Deletion Algorithm</h3>
+   <pre>START
+IF size == 0 THEN
+   PRINT "Array Underflow"
+   STOP
+END IF
+deletedVal = A[pos]
+FOR i = pos TO size-2 DO
+   A[i] = A[i + 1]  // Shift left
+END FOR
+size = size - 1
+STOP</pre>
+  </div>
+  <div>
+   <h3>3. Linear Search Algorithm</h3>
+   <pre>START
+FOR i = 0 TO size-1 DO
+   IF A[i] == target THEN
+      RETURN i // Match found
+   END IF
+END FOR
+RETURN -1 // Not found
+STOP</pre>
+  </div>
+  <div>
+   <h3>4. Traversal Algorithm</h3>
+   <pre>START
+FOR i = 0 TO size-1 DO
+   VISIT(A[i])
+   PRINT Address = Base + (i * 4)
+END FOR
+STOP</pre>
+  </div>
+ </div>
+
+ <div style="margin-top:16px">
+   <h3>Live Implementation Code</h3>
+   <button class="plain" id="codeBtn" aria-expanded="false">Show Code Implementation</button>
+   <div id="codeBox"><pre id="codeText"></pre></div>
+ </div>
+</section>
+
+<!-- AI STUDY ASSISTANT SECTION -->
+<section id="ai">
+ <h2>AI Study Assistant (Powered by ArrayLab Backend)</h2>
+ <p style="font-size:0.9rem;color:var(--dim)">Ask conceptual questions about data structures, time complexity, memory allocation, or viva preparation:</p>
+ 
+ <div class="chips" id="chips"></div>
+
+ <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+  <input id="aiQ" type="text" placeholder="e.g. Why is array access O(1)? or Array vs linked list" style="flex:1;min-width:240px">
+  <button onclick="askAssistant()">Ask Assistant</button>
+ </div>
+ <div id="aiOut">Type a question or click a suggestion above to get an instant answer.</div>
+</section>
+
+<!-- VIVA QUESTIONS SECTION -->
+<section id="viva">
+ <h2>Professor Review &amp; Viva Questions</h2>
+ <p style="font-size:0.9rem;color:var(--dim)">Comprehensive questions and answers covering memory addressing, data structure mechanics, and practical demonstration:</p>
+ <div id="vivaList">Loading viva question bank...</div>
+</section>
+
+<section>
+ <h2>Academic Conclusion</h2>
+ <p>This practical demonstrates both the fundamental memory mechanics of linear arrays and modern full-stack web architecture. By combining an interactive cyberpunk visualizer with an Express.js REST API backend, it proves the relationship between physical memory addresses (<code>Base + i * Size</code>), algorithmic shifting overhead, and constant-time index calculations.</p>
+</section>
+
+</main>
+
+<footer>
+ <div class="wrap">
+  <b>ArrayLab - Data Structures Practical Experiment &amp; REST Server</b><br>
+  Built with HTML5, Cyber-Neon CSS, JavaScript &amp; Node.js / Express Backend<br>
+  <small>B.Tech Computer Science and Engineering &middot; Data Structures Practical</small>
+ </div>
+</footer>
+
+<script>
+// ---------- Configuration & Backend API Client ----------
+const API_BASE = window.location.origin.startsWith('http')
+  ? window.location.origin + '/api'
+  : 'http://localhost:3001/api';
+
+const MAX_SIZE = 12;
+const BASE_ADDRESS = 1000;
+const ELEMENT_SIZE = 4;
+const INITIAL_ARRAY = [10, 20, 30, 40, 50];
+
+let arrayData = [...INITIAL_ARRAY];
+let historyList = [];
+let busy = false;
+let backendOnline = false;
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ---------- Backend Health Check & Badge Updater ----------
+async function checkBackendHealth(manual = false) {
+  const badge = $('backendBadge');
+  const badgeText = $('badgeText');
+  const sourceBadge = $('serverSourceBadge');
+
+  try {
+    const res = await fetch(`${API_BASE}/health`, { method: 'GET' });
+    if (res.ok) {
+      const data = await res.json();
+      backendOnline = true;
+      badge.className = 'status-pill online';
+      badgeText.textContent = 'Backend: ONLINE (Port 3001)';
+      if (sourceBadge) sourceBadge.textContent = '[Sync: REST Backend Active]';
+      if (manual) showStatus('Health Check', 'Backend is active and communicating on port 3001.');
+      return true;
+    }
+  } catch (err) {
+    backendOnline = false;
+    badge.className = 'status-pill offline';
+    badgeText.textContent = 'Local Mode (Backend Offline)';
+    if (sourceBadge) sourceBadge.textContent = '[Sync: Local Fallback Active]';
+    if (manual) showStatus('Health Check', 'Backend offline. Run "node server.js" to enable REST API.', false);
+  }
+  return false;
+}
+
+// Backend API wrapper helper with automatic local fallback
+async function apiRequest(endpoint, method = 'POST', body = null) {
+  if (backendOnline) {
+    try {
+      const options = {
+        method,
+        headers: { 'Content-Type': 'application/json' }
+      };
+      if (body) options.body = JSON.stringify(body);
+      const res = await fetch(`${API_BASE}${endpoint}`, options);
+      const data = await res.json();
+      if (res.ok) return { success: true, data };
+      return { success: false, error: data.error || `HTTP error ${res.status}` };
+    } catch (err) {
+      console.warn(`API call failed to ${endpoint}, switching to local mode`, err);
+      backendOnline = false;
+      checkBackendHealth();
+    }
+  }
+  return { success: false, fallback: true };
+}
+
+// ---------- UI Rendering Helpers ----------
+function renderArray(hl = {}) {
+  $('cells').innerHTML = arrayData.map((v, i) =>
+    `<div class="cell ${hl[i] || ''}" id="cell-${i}">
+      <span class="idx">[${i}]</span>
+      <span class="val">${v}</span>
+    </div>`
+  ).join('') || '<p style="color:var(--dim);padding:10px">Array is empty.</p>';
+
+  $('mem').innerHTML = arrayData.map((v, i) =>
+    `<div class="m ${hl[i] || ''}" id="mem-${i}">
+      <small>${BASE_ADDRESS + i * ELEMENT_SIZE}</small>
+      <b>${v}</b>
+      <small>A[${i}]</small>
+    </div>`
+  ).join('');
+
+  $('arrSize').textContent = arrayData.length;
+}
+
+function showStatus(op, msg, ok = true) {
+  $('curOp').textContent = op;
+  $('statusMsg').textContent = msg;
+  $('statusMsg').className = ok ? '' : 'err';
+}
+
+function showExplanation(title, steps) {
+  $('explain').innerHTML = `<b>${title}</b><ol>` + steps.map(s => `<li>${s}</li>`).join('') + '</ol>';
+}
+
+function addHistory(text) {
+  historyList.unshift(text);
+  historyList = historyList.slice(0, 8);
+  renderHistory();
+}
+
+function renderHistory() {
+  $('history').innerHTML = historyList.length
+    ? historyList.map(t => `<li>&#10003; ${t}</li>`).join('')
+    : '<li>No operations yet.</li>';
+}
+
+function validIndex(p, max) {
+  p = String(p).trim();
+  return p !== '' && Number.isInteger(Number(p)) && Number(p) >= 0 && Number(p) <= max;
+}
+
+// ---------- Array Operations (Integrated with Backend) ----------
+
+// 1. Insert Operation
+async function insertElement(val = $('insVal').value, pos = $('insPos').value) {
+  if (busy) return;
+  val = String(val).trim();
+  pos = String(pos).trim();
+
+  if (val === '' || pos === '') return showStatus('Insert', 'Please enter both value and position.', false);
+  if (isNaN(val)) return showStatus('Insert', 'Please enter a valid number for value.', false);
+  if (!validIndex(pos, arrayData.length)) {
+    return showStatus('Insert', 'Position must be between 0 and ' + arrayData.length + '.', false);
+  }
+
+  val = Number(val);
+  pos = Number(pos);
+
+  // Try backend first
+  const apiRes = await apiRequest('/array/insert', 'POST', { value: val, position: pos });
+  if (apiRes.success) {
+    arrayData = apiRes.data.array;
+    renderArray({ [pos]: 'active' });
+    showStatus('Insert', apiRes.data.message);
+    showExplanation('Backend Insert ' + val + ' at index ' + pos, apiRes.data.steps);
+    addHistory(apiRes.data.message);
+    $('insVal').value = '';
+    $('insPos').value = '';
+    return;
+  }
+
+  if (apiRes.error) {
+    return showStatus('Insert', apiRes.error, false);
+  }
+
+  // Local fallback
+  if (arrayData.length >= MAX_SIZE) {
+    return showStatus('Insert', 'Array overflow: maximum size of ' + MAX_SIZE + ' reached.', false);
+  }
+  const shifted = arrayData.length - pos;
+  for (let i = arrayData.length; i > pos; i--) {
+    arrayData[i] = arrayData[i - 1];
+  }
+  arrayData[pos] = val;
+  renderArray({ [pos]: 'active' });
+  showStatus('Insert', 'Inserted ' + val + ' at index ' + pos + ' (Local mode).');
+  showExplanation('Insert ' + val + ' at index ' + pos, [
+    'Check if space is available (current size ' + (arrayData.length - 1) + ' < max ' + MAX_SIZE + ').',
+    'Position ' + pos + ' is valid (0 to ' + (arrayData.length - 1) + ').',
+    shifted > 0 ? ('Shift ' + shifted + ' element(s) to the right to create an empty cell at index ' + pos + '.') : 'No shifting needed since inserting at the end.',
+    'Store ' + val + ' at index ' + pos + ' and increase array size to ' + arrayData.length + '.']);
+  addHistory('Inserted ' + val + ' at index ' + pos);
+  $('insVal').value = '';
+  $('insPos').value = '';
+}
+
+// 2. Delete Operation
+async function deleteElement(pos = $('delPos').value) {
+  if (busy) return;
+  pos = String(pos).trim();
+
+  if (pos === '') return showStatus('Delete', 'Please enter a position to delete.', false);
+  if (!validIndex(pos, arrayData.length - 1)) {
+    return showStatus('Delete', arrayData.length === 0 ? 'Array underflow: array is already empty.' : 'Position must be between 0 and ' + (arrayData.length - 1) + '.', false);
+  }
+
+  pos = Number(pos);
+
+  // Try backend first
+  const apiRes = await apiRequest('/array/delete', 'POST', { position: pos });
+  if (apiRes.success) {
+    arrayData = apiRes.data.array;
+    renderArray();
+    showStatus('Delete', apiRes.data.message);
+    showExplanation('Backend Delete at index ' + pos, apiRes.data.steps);
+    addHistory(apiRes.data.message);
+    $('delPos').value = '';
+    return;
+  }
+
+  if (apiRes.error) {
+    return showStatus('Delete', apiRes.error, false);
+  }
+
+  // Local fallback
+  const deleted = arrayData[pos];
+  const shifted = arrayData.length - 1 - pos;
+  for (let i = pos; i < arrayData.length - 1; i++) {
+    arrayData[i] = arrayData[i + 1];
+  }
+  arrayData.length = arrayData.length - 1;
+  renderArray();
+  showStatus('Delete', 'Deleted ' + deleted + ' from index ' + pos + ' (Local mode).');
+  showExplanation('Delete index ' + pos, [
+    'Position ' + pos + ' is valid (0 to ' + arrayData.length + ').',
+    'Value ' + deleted + ' at index ' + pos + ' is removed.',
+    shifted > 0 ? ('Shift ' + shifted + ' element(s) to the left to close the empty gap.') : 'Deleted the last element, no shifting required.',
+    'Array size is decreased to ' + arrayData.length + '.']);
+  addHistory('Deleted ' + deleted + ' at index ' + pos);
+  $('delPos').value = '';
+}
+
+// 3. Update Operation
+async function updateElement(pos = $('updPos').value, val = $('updVal').value) {
+  if (busy) return;
+  pos = String(pos).trim();
+  val = String(val).trim();
+
+  if (pos === '' || val === '') return showStatus('Update', 'Please enter both position and new value.', false);
+  if (isNaN(val)) return showStatus('Update', 'Please enter a valid number for value.', false);
+  if (!validIndex(pos, arrayData.length - 1)) {
+    return showStatus('Update', arrayData.length === 0 ? 'Array is empty.' : 'Position must be between 0 and ' + (arrayData.length - 1) + '.', false);
+  }
+
+  pos = Number(pos);
+  val = Number(val);
+
+  // Try backend
+  const apiRes = await apiRequest('/array/update', 'POST', { position: pos, value: val });
+  if (apiRes.success) {
+    arrayData = apiRes.data.array;
+    renderArray({ [pos]: 'active' });
+    showStatus('Update', apiRes.data.message);
+    showExplanation('Backend Update index ' + pos, apiRes.data.steps);
+    addHistory(apiRes.data.message);
+    $('updPos').value = '';
+    $('updVal').value = '';
+    return;
+  }
+
+  // Local fallback
+  const old = arrayData[pos];
+  arrayData[pos] = val;
+  renderArray({ [pos]: 'active' });
+  showStatus('Update', 'Updated index ' + pos + ' from ' + old + ' to ' + val + '.');
+  showExplanation('Update index ' + pos, [
+    'Compute direct memory address: Base 1000 + (' + pos + ' x 4) = ' + (1000 + pos * 4) + '.',
+    'Instant O(1) random-access write.',
+    'Old value ' + old + ' replaced with new value ' + val + '.']);
+  addHistory('Updated index ' + pos + ' to ' + val);
+  $('updPos').value = '';
+  $('updVal').value = '';
+}
+
+// 4. Search Operation
+async function searchElement(key = $('srcVal').value) {
+  if (busy) return;
+  key = String(key).trim();
+  if (key === '') return showStatus('Search', 'Please enter a value to search.', false);
+  if (isNaN(key)) return showStatus('Search', 'Please enter a number.', false);
+  key = Number(key);
+
+  // Try backend
+  const apiRes = await apiRequest('/array/search', 'POST', { value: key });
+  if (apiRes.success) {
+    const found = apiRes.data.foundIndex;
+    if (found === -1) {
+      renderArray();
+      showStatus('Search', apiRes.data.message, false);
+      showExplanation('Linear Search for ' + key + ' (Not Found)', apiRes.data.steps);
+    } else {
+      renderArray({ [found]: 'ok' });
+      showStatus('Search', apiRes.data.message);
+      showExplanation('Linear Search for ' + key + ' (Found)', apiRes.data.steps);
+    }
+    addHistory(apiRes.data.message);
+    return;
+  }
+
+  // Local fallback
+  let found = -1, checks = 0;
+  for (let i = 0; i < arrayData.length; i++) {
+    checks++;
+    if (arrayData[i] === key) { found = i; break; }
+  }
+  if (found === -1) {
+    renderArray();
+    showStatus('Search', 'Element ' + key + ' not found in array.', false);
+    showExplanation('Search ' + key + ' (Not Found)', [
+      'Start from index 0 and inspect sequentially.',
+      'All ' + checks + ' elements checked with no match.',
+      'Returns -1 (time O(n)).']);
+  } else {
+    renderArray({ [found]: 'ok' });
+    showStatus('Search', key + ' found at index ' + found + '.');
+    showExplanation('Search ' + key + ' (Found)', [
+      'Linear search checked elements from index 0 to ' + found + '.',
+      checks + ' comparison(s) executed.',
+      'Target match at index ' + found + '. Returns ' + found + '.']);
+  }
+  addHistory('Searched for ' + key + (found === -1 ? ' (not found)' : ' (index ' + found + ')'));
+}
+
+// 5. Traverse Operation
+async function traverseArray() {
+  if (busy) return;
+  if (arrayData.length === 0) return showStatus('Traverse', 'Array is empty.', false);
+  busy = true;
+  showStatus('Traverse', 'Visiting elements sequentially...');
+
+  // Visual animation
+  for (let i = 0; i < arrayData.length; i++) {
+    renderArray({ [i]: 'active' });
+    await sleep(400);
+  }
+  renderArray();
+  busy = false;
+
+  // Sync with backend steps if online
+  const apiRes = await apiRequest('/array/traverse', 'POST');
+  if (apiRes.success) {
+    showStatus('Traverse', apiRes.data.message);
+    showExplanation('Backend Array Traversal', apiRes.data.steps);
+    addHistory(apiRes.data.message);
+  } else {
+    showStatus('Traverse', 'All ' + arrayData.length + ' elements visited.');
+    showExplanation('Traverse the array', [
+      'Start at index 0.',
+      'Visit each element once, advancing index by 1.',
+      'Stop after visiting index ' + (arrayData.length - 1) + '. Time Complexity: O(n).']);
+    addHistory('Traversed array (' + arrayData.length + ' elements)');
+  }
+}
+
+// 6. Sort Operation
+async function sortArray() {
+  if (busy) return;
+  if (arrayData.length === 0) return showStatus('Sort', 'Array is empty.', false);
+
+  const apiRes = await apiRequest('/array/sort', 'POST');
+  if (apiRes.success) {
+    arrayData = apiRes.data.array;
+    renderArray();
+    showStatus('Sort', apiRes.data.message);
+    showExplanation('Backend Sort Ascending', apiRes.data.steps);
+    addHistory(apiRes.data.message);
+    return;
+  }
+
+  // Local fallback
+  const before = arrayData.join(',');
+  arrayData.sort((a, b) => a - b);
+  renderArray();
+  const same = before === arrayData.join(',');
+  showStatus('Sort', same ? 'Array was already sorted.' : 'Array sorted in ascending order.');
+  showExplanation('Sort ascending', [
+    'Compare elements numerically.',
+    'Rearrange elements from smallest to largest.',
+    same ? 'Array was already sorted.' : 'Array is now sorted.']);
+  addHistory('Sorted the array');
+}
+
+// 7. Reverse Operation
+async function reverseArray() {
+  if (busy) return;
+  if (arrayData.length === 0) return showStatus('Reverse', 'Array is empty.', false);
+
+  const apiRes = await apiRequest('/array/reverse', 'POST');
+  if (apiRes.success) {
+    arrayData = apiRes.data.array;
+    renderArray();
+    showStatus('Reverse', apiRes.data.message);
+    showExplanation('Backend Array Reverse', apiRes.data.steps);
+    addHistory(apiRes.data.message);
+    return;
+  }
+
+  // Local fallback
+  for (let i = 0; i < Math.floor(arrayData.length / 2); i++) {
+    const j = arrayData.length - 1 - i;
+    const temp = arrayData[i];
+    arrayData[i] = arrayData[j];
+    arrayData[j] = temp;
+  }
+  renderArray();
+  showStatus('Reverse', 'Array reversed successfully.');
+  showExplanation('Reverse the array', [
+    'Swap outer symmetric elements A[i] with A[n-1-i].',
+    'Move inward until reaching center.',
+    'Reversed in O(n/2) = O(n) time.']);
+  addHistory('Reversed the array');
+}
+
+// 8. Reset Operation
+async function resetArray() {
+  if (busy) return;
+
+  const apiRes = await apiRequest('/array/reset', 'POST');
+  if (apiRes.success) {
+    arrayData = apiRes.data.array;
+    renderArray();
+    showStatus('Reset', apiRes.data.message);
+    showExplanation('Reset Array', apiRes.data.steps);
+    historyList = [];
+    renderHistory();
+    ['insVal', 'insPos', 'delPos', 'updPos', 'updVal', 'srcVal'].forEach(id => $(id).value = '');
+    return;
+  }
+
+  arrayData = [...INITIAL_ARRAY];
+  historyList = [];
+  renderHistory();
+  ['insVal', 'insPos', 'delPos', 'updPos', 'updVal', 'srcVal'].forEach(id => $(id).value = '');
+  renderArray();
+  showStatus('Reset', 'Array restored to [10, 20, 30, 40, 50].');
+  showExplanation('Reset array', ['Array is restored to starting values.', 'Memory mapping reset.']);
+}
+
+// ---------- Live REST API Tester for Evaluators ----------
+async function callApiTest(endpoint, method) {
+  const resultBox = $('apiTestResult');
+  const jsonPre = $('apiTestJson');
+  resultBox.style.display = 'block';
+  jsonPre.textContent = 'Calling ' + API_BASE + endpoint + '...';
+
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, { method });
+    const data = await res.json();
+    jsonPre.textContent = JSON.stringify(data, null, 2);
+    showStatus('API Test', 'Endpoint ' + endpoint + ' returned 200 OK');
+  } catch (err) {
+    jsonPre.textContent = 'Error connecting to endpoint: ' + err.message + '\n\nMake sure the backend is running with:\nnode server.js';
+    showStatus('API Test', 'Backend connection error', false);
+  }
+}
+
+// ---------- AI Study Assistant (Client + Backend Sync) ----------
+const localAiAnswers = [
+  { keys: ['linked list', 'vs linked'], answer: 'Array: fixed size, contiguous memory, O(1) access by index, slow insert/delete in the middle. Linked list: dynamic size, nodes joined by pointers, access needs O(n) traversal, but insertion/deletion is easy once the node is found.' },
+  { keys: ['o(1)', 'access'], answer: 'Array elements are stored contiguously, so the address of A[i] = Base Address + (i x Element Size). One calculation gives the location directly, no matter how big the array is. That is why access is O(1).' },
+  { keys: ['deletion', 'delete'], answer: 'After deleting an element, all elements after it must shift one place left to fill the gap. In the worst case (deleting the first element) n-1 elements move, so deletion takes O(n).' },
+  { keys: ['insertion', 'insert'], answer: 'To insert at an index, the elements from that index onward are shifted one position right to make space. Then the new value is placed and the size increases by 1. Shifting makes it O(n) in the worst case.' },
+  { keys: ['linear search', 'search'], answer: 'Linear search checks elements one by one from index 0 until the key is found or the array ends. Best case O(1), average and worst case O(n). It works on unsorted arrays.' },
+  { keys: ['traversal', 'traverse'], answer: 'Traversal means visiting every element of the array exactly once, usually with a loop from index 0 to n-1. It takes O(n) time.' },
+  { keys: ['zero', 'index start'], answer: 'The index is the offset from the base address. The first element is 0 positions away from the start, so its index is 0.' },
+  { keys: ['complexity', 'time'], answer: 'Access O(1). Search O(n). Insert and delete O(n) (because of shifting). Traversal O(n).' },
+  { keys: ['what is an array', 'define', 'array'], answer: 'An array is a linear data structure used to store elements of the same data type in contiguous memory locations. Each element is accessed using an index starting from 0.' }
+];
+
+async function askAssistant(text) {
+  const q = (typeof text === 'string' ? text : $('aiQ').value).trim();
+  if (!q) { $('aiOut').textContent = 'Please type a question first.'; return; }
+  $('aiQ').value = q;
+  $('aiOut').textContent = 'Consulting ArrayLab AI Assistant...';
+
+  // Query Backend
+  const apiRes = await apiRequest('/tutor/ask', 'POST', { question: q });
+  if (apiRes.success && apiRes.data.answer) {
+    $('aiOut').textContent = apiRes.data.answer;
+    return;
+  }
+
+  // Local fallback lookup
+  const clean = q.toLowerCase();
+  const hit = localAiAnswers.find(a => a.keys.some(k => clean.includes(k)));
+  $('aiOut').textContent = hit ? hit.answer : 'I can answer questions about arrays, indexing, linear search, insertion, deletion, and complexity.';
+}
+
+// ---------- Viva Question Bank Loader ----------
+async function loadVivaQuestions() {
+  const vivaContainer = $('vivaList');
+  
+  // Try loading from backend first
+  try {
+    const res = await fetch(`${API_BASE}/viva`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.questions && data.questions.length > 0) {
+        vivaContainer.innerHTML = data.questions.map((v, i) =>
+          `<details><summary>${i + 1}. ${v.q}</summary><p style="margin:8px 0;color:#c0c0e8;line-height:1.6">${v.a}</p></details>`
+        ).join('');
+        return;
+      }
+    }
+  } catch (e) {
+    console.log('Viva using local question bank');
+  }
+
+  // Fallback 15 Comprehensive Viva Questions
+  const fallbackViva = [
+    ['What is an array?', 'A linear data structure that stores elements of the same data type in contiguous memory locations.'],
+    ['Why does array indexing start from zero?', 'The index is the offset from the base address. The first element is at offset 0, so its index is 0.'],
+    ['Why is accessing an array element O(1)?', 'The address is found directly using Base Address + (Index x Element Size), so no searching is needed.'],
+    ['What is traversal?', 'Visiting every element of the array once, usually using a loop.'],
+    ['What is linear search?', 'Checking elements one by one from the start until the required value is found or the array ends.'],
+    ['What is the time complexity of linear search?', 'Best case O(1), average and worst case O(n).'],
+    ['Why does insertion take O(n)?', 'Elements after the position must be shifted right to make space, and in the worst case all n elements move.'],
+    ['Why does deletion take O(n)?', 'Elements after the deleted position must be shifted left to close the gap, which can take up to n-1 shifts.'],
+    ['What is the difference between an array and a linked list?', 'An array uses contiguous memory with fast index access. A linked list uses nodes connected by pointers, so it grows easily but access is O(n).'],
+    ['What technologies did you use to create this project?', 'HTML5 for semantic structure, Cyber-Neon CSS3 for interactive simulation aesthetics, vanilla JavaScript for client UI, and Node.js + Express for the RESTful API backend.'],
+    ['Why did you build a backend for this assignment?', 'The backend enforces business rules, boundary checks, memory address calculations, and powers the REST API and AI study assistant.'],
+    ['How does your search operation work?', 'The client issues a POST /api/array/search request to the backend. The backend scans elements sequentially, counts comparison checks, and returns the matching index.'],
+    ['How did you implement array visualization?', 'The array state and memory mappings from the backend are dynamically rendered into DOM cells with neon highlights for active, found, and hint states.'],
+    ['What happens when an element is inserted?', 'The backend checks boundary limits, shifts all trailing elements rightward in memory, stores the value, updates memory layouts, and returns step-by-step logs.'],
+    ['What are the limitations of arrays?', 'Fixed size in traditional static arrays, costly insertion and deletion due to element shifting, and slow linear search on unsorted elements.']
+  ];
+
+  vivaContainer.innerHTML = fallbackViva.map((v, i) =>
+    `<details><summary>${i + 1}. ${v[0]}</summary><p style="margin:8px 0;color:#c0c0e8;line-height:1.6">${v[1]}</p></details>`
+  ).join('');
+}
+
+// ---------- Initialization ----------
+const suggestions = [
+  'What is an array?',
+  'Why is array access O(1)?',
+  'Explain insertion in an array.',
+  'What is linear search?',
+  'Why does deletion take O(n)?',
+  'Array vs linked list'
+];
+
+async function init() {
+  // Render initial suggestions
+  $('chips').innerHTML = suggestions.map(s =>
+    `<button class="alt" onclick="askAssistant(this.textContent)">${s}</button>`
+  ).join('');
+
+  $('aiQ').addEventListener('keydown', e => { if (e.key === 'Enter') askAssistant(); });
+
+  // Code viewer
+  $('codeText').textContent = [
+    insertElement, deleteElement, updateElement, searchElement,
+    traverseArray, sortArray, reverseArray, resetArray
+  ].map(f => f.toString()).join('\n\n');
+
+  $('codeBtn').addEventListener('click', () => {
+    const box = $('codeBox'), open = box.style.display === 'block';
+    box.style.display = open ? 'none' : 'block';
+    $('codeBtn').textContent = open ? 'Show Code Implementation' : 'Hide Code Implementation';
+    $('codeBtn').setAttribute('aria-expanded', String(!open));
+  });
+
+  // Mobile menu
+  $('menuBtn').addEventListener('click', () => {
+    const open = $('nav').classList.toggle('open');
+    $('menuBtn').setAttribute('aria-expanded', String(open));
+  });
+  $('nav').addEventListener('click', e => {
+    if (e.target.tagName === 'A') $('nav').classList.remove('open');
+  });
+
+  // Check backend connectivity and sync state
+  const isUp = await checkBackendHealth();
+  if (isUp) {
+    try {
+      const res = await fetch(`${API_BASE}/array`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.array) arrayData = data.array;
+        if (data.history && data.history.length) historyList = data.history;
+      }
+    } catch (e) {}
+  }
+
+  renderArray();
+  renderHistory();
+  loadVivaQuestions();
+  showStatus('Ready', backendOnline ? 'ArrayLab connected to Node.js backend on port 3001.' : 'ArrayLab ready (Local simulation mode).');
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
